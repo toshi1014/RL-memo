@@ -138,8 +138,7 @@ class Environment():
         return next_state, reward, done
 
 
-    def step(self, action_value):
-        action = Action(action_value)
+    def step(self, action):
         next_state, reward, done = self.transit(self.state, action)
         self.state = next_state
         return next_state, reward, done

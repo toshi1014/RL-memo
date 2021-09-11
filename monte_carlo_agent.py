@@ -2,7 +2,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 from agent import Agent
-from environment import Environment, show_reward_map
+from environment import Action, Environment, show_reward_map
 
 EPSILON = 0.1
 MAX_EPISODE = 1000
@@ -27,23 +27,25 @@ class MonteCarloAgent(Agent):
             while not done:
                 state_now = env.state
                 action_idx = self.policy(env.state, env.action_list)
-                next_state, reward, done = env.step(env.action_list[action_idx])
-                log_list.append({"state": state_now, "action": action_idx, "reward": reward})
+                action = Action(env.action_list[action_idx])
+                next_state, reward, done = env.step(action)
+
+                log_list.append({"state": state_now, "action_idx": action_idx, "reward": reward})
                 sum_reward += reward
 
             sum_reward_list.append(sum_reward)
 
             for idx, log in enumerate(log_list):
-                state, action = log["state"], log["action"]
+                state, action_idx = log["state"], log["action_idx"]
 
                 G, t = 0, 0
                 for j in range(idx, len(log_list)):
                     G += (gamma**t) * log_list[j]["reward"]
                     t += 1
 
-                N[state][action] += 1
-                alpha = 1/N[state][action]
-                self.Q[state][action] += alpha * (G - self.Q[state][action])
+                N[state][action_idx] += 1
+                alpha = 1/N[state][action_idx]
+                self.Q[state][action_idx] += alpha * (G - self.Q[state][action_idx])
 
             if (episode % 100) == 0:
                 print("episode " + str(episode))
@@ -59,7 +61,7 @@ def train():
     env = Environment()
     monte_carlo_agent.learn(env)
     monte_carlo_agent.test(env)
-    show_reward_map(env, MonteCarlo=monte_carlo_agent.Q)
+    show_reward_map(1, 1, env, MonteCarlo=monte_carlo_agent.Q)
 
 
 if __name__ == '__main__':

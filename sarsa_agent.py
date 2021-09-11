@@ -2,7 +2,7 @@ from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 from agent import Agent
-from environment import Environment, show_reward_map
+from environment import Action, Environment, show_reward_map
 
 
 EPSILON = 0.1
@@ -26,7 +26,8 @@ class SARSAAgent(Agent):
             while not done:
                 state_now = env.state
                 action_idx = self.policy(env.state, env.action_list)
-                next_state, reward, done = env.step(env.action_list[action_idx])
+                action = Action(env.action_list[action_idx])
+                next_state, reward, done = env.step(action)
 
                 next_action_idx = self.policy(next_state, env.action_list)
                 gain = reward + gamma*self.Q[next_state][next_action_idx]
@@ -51,7 +52,7 @@ def train():
     env = Environment()
     sarsa_agent.learn(env)
     sarsa_agent.test(env)
-    show_reward_map(env, SARSA=sarsa_agent.Q)
+    show_reward_map(1, 1, env, SARSA=sarsa_agent.Q)
 
 
 if __name__ == '__main__':
