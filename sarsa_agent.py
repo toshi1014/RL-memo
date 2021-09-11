@@ -15,7 +15,7 @@ class SARSAAgent(Agent):
         super().__init__(epsilon)
 
     def learn(self, env, max_episode=MAX_EPISODE, gamma=GAMMA, learning_rate=LEARNING_RATE):
-        self.Q = defaultdict(lambda: [0]*len(env.action_list))
+        self.Q = defaultdict(lambda: defaultdict(lambda: 0))
         reward_log = []
 
         for episode in range(max_episode):
@@ -25,14 +25,13 @@ class SARSAAgent(Agent):
 
             while not done:
                 state_now = env.state
-                action_idx = self.policy(env.state, env.action_list)
-                action = Action(env.action_list[action_idx])
+                action = self.policy(env.state, env.action_list)
                 next_state, reward, done = env.step(action)
 
-                next_action_idx = self.policy(next_state, env.action_list)
-                gain = reward + gamma*self.Q[next_state][next_action_idx]
+                next_action = self.policy(next_state, env.action_list)
+                gain = reward + gamma*self.Q[next_state][next_action]
 
-                self.Q[state_now][action_idx] += learning_rate * (gain - self.Q[state_now][action_idx])
+                self.Q[state_now][action] += learning_rate * (gain - self.Q[state_now][action])
 
                 sum_reward += reward
 

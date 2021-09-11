@@ -165,11 +165,11 @@ def show_reward_map(row_num, col_num, env, **kwargs):
                 map_row = 1 + r * state_size
                 map_col = 1 + c * state_size
 
-                reward_map[map_row-1][map_col] = Q[state][0]
-                reward_map[map_row+1][map_col] = Q[state][1]
-                reward_map[map_row][map_col-1] = Q[state][2]
-                reward_map[map_row][map_col+1] = Q[state][3]
-                reward_map[map_row][map_col] = np.mean(Q[state])
+                reward_map[map_row-1][map_col] = Q[state][Action.UP]
+                reward_map[map_row+1][map_col] = Q[state][Action.DOWN]
+                reward_map[map_row][map_col-1] = Q[state][Action.LEFT]
+                reward_map[map_row][map_col+1] = Q[state][Action.RIGHT]
+                reward_map[map_row][map_col] = np.mean(list(Q[state].values()))
 
         ax = fig.add_subplot(row_num, col_num, i+1)
         ax.imshow(
