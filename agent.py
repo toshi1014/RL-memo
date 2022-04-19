@@ -1,41 +1,35 @@
 import numpy as np
-from environment import Environment
 
-class Agent():
-    def __init__(self, epsilon_):
-        self.Q = {}
-        self.epsilon = epsilon_
+
+class Agent:
+    def __init__(self, epsilon):
+        self.epsilon = epsilon
 
     def q_state_init(self, state, arg_action_list):
         if not self.Q[state]:
             for action in arg_action_list:
                 self.Q[state][action]
 
-    def policy(self, state, arg_action_list):
-        self.q_state_init(state, arg_action_list)
+    def policy(self, state, action_list, greedy=False):
+        self.q_state_init(state, action_list)
+        bool_first_state = sum(self.Q[state].values()) == 0
 
-        action_list = []
-        value_list = []
-        for action in self.Q[state]:
-            action_list.append(action)
-            value_list.append(self.Q[state][action])
-
-        action = action_list[np.argmax(value_list)]
-
-        if (np.random.random() < self.epsilon) | (sum(self.Q[state].values()) == 0):
-            action = np.random.choice(action_list)
-
-        return action
+        if ((np.random.random() < self.epsilon) | bool_first_state) & (not greedy):
+            return np.random.choice(action_list)
+        else:
+            action_idx = np.argmax(list(self.Q[state].values()))
+            return action_list[action_idx]
 
     def test(self, env):
-        env.reset_state()
         done = False
         sum_reward = 0
+        env.reset()
 
         while not done:
-            action = self.policy(env.state, env.action_list)
+            state = env.state
+            action = self.policy(state, env.action_list, greedy=True)
             next_state, reward, done = env.step(action)
+            print(action, next_state)
             sum_reward += reward
-            print(next_state)
 
-        print("reward:", sum_reward)
+        return sum_reward

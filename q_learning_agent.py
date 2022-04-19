@@ -1,59 +1,59 @@
-from collections import defaultdict
 import numpy as np
-import matplotlib.pyplot as plt
+from collections import defaultdict, deque
+from environment import Experience
 from agent import Agent
-from environment import Environment, show_reward_map
-
-
-EPSILON = 0.1
-MAX_EPISODE = 1000
-GAMMA = 0.9
-LEARNING_RATE = 0.1
 
 
 class QLearningAgent(Agent):
-    def __init__(self, epsilon=EPSILON):
+    def __init__(self, epsilon, multi_step_window):
         super().__init__(epsilon)
-
-    def learn(self, env, max_episode=MAX_EPISODE, gamma=GAMMA, learning_rate=LEARNING_RATE):
         self.Q = defaultdict(lambda: defaultdict(lambda: 0))
-        reward_log = []
+        self.multi_step_experience = deque(maxlen=multi_step_window)
+        self.multi_step_window = multi_step_window
 
-        for episode in range(max_episode):
-            env.reset_state()
+    def learn(self, env, max_episodes, discount_rate, learning_rate):
+        sum_reward_list = []
+
+        for episode in range(max_episodes):
             done = False
+            env.reset()
             sum_reward = 0
 
             while not done:
-                state_now = env.state
-                action = self.policy(env.state, env.action_list)
+                state = env.state
+                action = self.policy(state, env.action_list)
                 next_state, reward, done = env.step(action)
-
-                self.q_state_init(next_state, env.action_list)
-                
-                gain = reward + gamma*max(self.Q[next_state].values())
-                self.Q[state_now][action] += learning_rate * (gain - self.Q[state_now][action])
-
                 sum_reward += reward
+                self.q_state_init(next_state, env.action_list)
 
-            reward_log.append(sum_reward)
+                # multi-step learning
+                if len(self.multi_step_experience) == self.multi_step_window:
+                    target_state = self.multi_step_experience[0].state
+                    target_action = self.multi_step_experience[0].action
+                    gain = 0
+                    for t, experience in enumerate(self.multi_step_experience):
+                        gain += discount_rate**t * experience.reward
+                    gain += discount_rate**len(self.multi_step_experience) * \
+                        max(self.Q[next_state].values())
 
-            if episode % 100 == 0:
-                print("episode " + str(episode))
+                    td = gain - self.Q[target_state][target_action]
+                    self.Q[target_state][target_action] += learning_rate * td
 
-        fig = plt.figure()
-        ax1 = fig.add_subplot(1,1,1)
-        ax1.scatter(range(max_episode), reward_log)
-        plt.show()
+                self.multi_step_experience.append(
+                    Experience(state, next_state, action, reward, done)
+                )
+                # end multi - step learning
 
+                # td
+                gain = reward + discount_rate * \
+                    max(self.Q[next_state].values())
+                td = gain - self.Q[state][action]
+                self.Q[state][action] += learning_rate * td
+                # end td
 
-def train():
-    q_learning_agent = QLearningAgent()
-    env = Environment()
-    q_learning_agent.learn(env)
-    q_learning_agent.test(env)
-    show_reward_map(1, 1, env, QLearning=q_learning_agent.Q)
+            sum_reward_list.append(sum_reward)
 
+            if episode % 10 == 0:
+                print("Episode ", episode)
 
-if __name__ == '__main__':
-    train()
+        return sum_reward_list
